@@ -22,7 +22,10 @@ canvas {width: 100%;height: 100%;}
   <canvas id="gameCanvas"></canvas>
 </div>
 
-<script>const dpr = window.devicePixelRatio || 1;const cvs = document.getElementById('gameCanvas');const ctx = cvs.getContext("2d");
+<script>
+  const dpr = window.devicePixelRatio || 1;
+  const cvs = document.getElementById('gameCanvas');
+  const ctx = cvs.getContext("2d");
 
 cvs.width = 1200 * dpr;
 cvs.height = 675 * dpr;
