@@ -1,70 +1,189 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-
-export default function AviatorSimulator(){
-  const [running,setRunning]=useState(false);
-  const [mult,setMult]=useState(1.00);
-  const [crashed,setCrashed]=useState(false);
-  const [bet,setBet]=useState(1);
-  const [balance,setBalance]=useState(3.50);
-  const [cashed,setCashed]=useState(false);
-  const [history,setHistory]=useState([1.26,1.11,4.65,10.09,6.00,1.31,13.5]);
-  const timer=useRef(null);
-
-  const startRound=()=>{
-    setRunning(true); setCrashed(false); setCashed(false); setMult(1);
-    const target=(1+Math.random()*14).toFixed(2);
-    let m=1;
-    timer.current=setInterval(()=>{
-      m += 0.03 + m*0.01;
-      if(m>=target){
-        clearInterval(timer.current);
-        setRunning(false); setCrashed(true);
-        setHistory(h=>[Number(target),...h].slice(0,7));
-      } else setMult(Number(m.toFixed(2)));
-    },60);
-  };
-
-  useEffect(()=>{startRound(); return ()=>clearInterval(timer.current)},[]);
-  useEffect(()=>{if(!running && crashed){const t=setTimeout(startRound,1800); return ()=>clearTimeout(t)}},[running,crashed]);
-
-  const placeBet=()=>{ if(running||balance<bet) return; setBalance(v=>+(v-bet).toFixed(2)); startRound(); };
-  const cashOut=()=>{ if(!running||cashed) return; setCashed(true); setRunning(false); clearInterval(timer.current); const win=bet*mult; setBalance(v=>+(v+win).toFixed(2)); setHistory(h=>[mult,...h].slice(0,7)); };
-
-  return <div className='min-h-screen bg-black text-white p-4 max-w-md mx-auto'>
-    <div className='flex justify-between items-center mb-3'>
-      <div className='text-xl font-bold'>Back</div>
-      <div className='text-center'><div className='text-sm text-zinc-400'>KES</div><div className='font-bold'>{balance.toFixed(2)}</div></div>
-      <Button className='bg-green-500 hover:bg-green-600 rounded-xl'>Deposit</Button>
-    </div>
-
-    <div className='text-4xl italic font-black text-pink-500 mb-2'>Aviator</div>
-    <div className='flex gap-3 text-sm overflow-x-auto mb-3'>{history.map((h,i)=><span key={i} className={h>2?'text-fuchsia-400':'text-sky-400'}>{h.toFixed(2)}x</span>)}</div>
-
-    <Card className='bg-zinc-950 border-zinc-800 rounded-3xl p-4 overflow-hidden'>
-      <div className='relative h-80 rounded-3xl bg-[radial-gradient(circle_at_bottom_left,#111,black_50%)] overflow-hidden'>
-        <div className='absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,0,100,0.08),transparent)]'/>
-        <svg className='absolute inset-0 w-full h-full'>
-          <path d='M0 300 Q120 280 180 220 T360 40' stroke='#ff0048' strokeWidth='5' fill='rgba(255,0,80,.18)' />
-        </svg>
-        <motion.div animate={{x: running ? mult*28 : mult*20, y: running ? -mult*14 : -mult*10}} transition={{type:'tween',ease:'linear',duration:.06}} className='absolute right-24 bottom-24 text-4xl'>✈️</motion.div>
-        <div className='absolute inset-0 flex items-center justify-center text-7xl font-bold'>{mult.toFixed(2)}x</div>
-        {crashed && <div className='absolute bottom-3 left-3 text-red-500 font-bold'>CRASHED</div>}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aviator Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .gradient-bg {
+      background: radial-gradient(circle at bottom left, #111, black 50%);
+    }
+    .plane-animation {
+      transition: all 60ms linear;
+    }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen bg-black text-white p-4">
+    <div class="max-w-md mx-auto">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-3">
+        <div class="text-xl font-bold">Back</div>
+        <div class="text-center">
+          <div class="text-sm text-zinc-400">KES</div>
+          <div class="font-bold" id="balance">3.50</div>
+        </div>
+        <button class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-xl">Deposit</button>
       </div>
-    </Card>
 
-    <div className='grid grid-cols-2 gap-3 mt-4'>
-      <Card className='bg-zinc-950 border-zinc-800 rounded-3xl p-4'>
-        <div className='text-center mb-3 text-zinc-400'>Bet</div>
-        <div className='flex items-center justify-between mb-3'><button onClick={()=>setBet(Math.max(1,bet-1))}>−</button><span className='text-3xl font-bold'>{bet.toFixed(2)}</span><button onClick={()=>setBet(bet+1)}>+</button></div>
-        <div className='grid grid-cols-2 gap-2'>{[1,2,5,10].map(v=><Button key={v} variant='outline' className='rounded-full border-zinc-700' onClick={()=>setBet(v)}>{v}</Button>)}</div>
-      </Card>
-      <Card className='bg-zinc-950 border-zinc-800 rounded-3xl p-4 flex flex-col justify-center'>
-        {!running ? <Button onClick={placeBet} className='h-32 text-4xl bg-green-500 hover:bg-green-600 rounded-3xl'>Bet<br/>{bet.toFixed(2)} USD</Button> : <Button onClick={cashOut} className='h-32 text-4xl bg-amber-500 hover:bg-amber-600 rounded-3xl'>Cash Out<br/>{(bet*mult).toFixed(2)} USD</Button>}
-      </Card>
+      <!-- Title -->
+      <div class="text-4xl italic font-black text-pink-500 mb-2">Aviator</div>
+      
+      <!-- History -->
+      <div class="flex gap-3 text-sm overflow-x-auto mb-3" id="history"></div>
+
+      <!-- Game Display -->
+      <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 overflow-hidden mb-4">
+        <div class="relative h-80 rounded-3xl gradient-bg overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-950 to-transparent opacity-20"></div>
+          <svg class="absolute inset-0 w-full h-full">
+            <path d="M0 300 Q120 280 180 220 T360 40" stroke="#ff0048" stroke-width="5" fill="rgba(255,0,80,.18)" />
+          </svg>
+          <div class="plane-animation absolute right-24 bottom-24 text-4xl" id="plane">✈️</div>
+          <div class="absolute inset-0 flex items-center justify-center text-7xl font-bold" id="multiplier">1.00x</div>
+          <div class="absolute bottom-3 left-3 text-red-500 font-bold hidden" id="crashed-label">CRASHED</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Bet Card -->
+        <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-4">
+          <div class="text-center mb-3 text-zinc-400">Bet</div>
+          <div class="flex items-center justify-between mb-3">
+            <button onclick="decreaseBet()" class="text-2xl">−</button>
+            <span class="text-3xl font-bold" id="bet-amount">1.00</span>
+            <button onclick="increaseBet()" class="text-2xl">+</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setBet(1)" class="border border-zinc-700 hover:bg-zinc-900 rounded-full py-2">1</button>
+            <button onclick="setBet(2)" class="border border-zinc-700 hover:bg-zinc-900 rounded-full py-2">2</button>
+            <button onclick="setBet(5)" class="border border-zinc-700 hover:bg-zinc-900 rounded-full py-2">5</button>
+            <button onclick="setBet(10)" class="border border-zinc-700 hover:bg-zinc-900 rounded-full py-2">10</button>
+          </div>
+        </div>
+
+        <!-- Action Card -->
+        <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 flex flex-col justify-center">
+          <button id="action-btn" onclick="placeBet()" class="h-32 text-3xl bg-green-500 hover:bg-green-600 rounded-3xl font-bold">
+            Bet<br/><span id="bet-display">1.00</span> USD
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-}
-                                                                                                                                    
+
+  <script>
+    let running = false;
+    let mult = 1.00;
+    let crashed = false;
+    let bet = 1;
+    let balance = 3.50;
+    let cashed = false;
+    let history = [1.26, 1.11, 4.65, 10.09, 6.00, 1.31, 13.5];
+    let timer = null;
+
+    function updateDisplay() {
+      document.getElementById('balance').textContent = balance.toFixed(2);
+      document.getElementById('bet-amount').textContent = bet.toFixed(2);
+      document.getElementById('bet-display').textContent = bet.toFixed(2);
+      document.getElementById('multiplier').textContent = mult.toFixed(2) + 'x';
+      updateHistory();
+    }
+
+    function updateHistory() {
+      const historyEl = document.getElementById('history');
+      historyEl.innerHTML = history.map(h => 
+        `<span class="${h > 2 ? 'text-fuchsia-400' : 'text-sky-400'}">${h.toFixed(2)}x</span>`
+      ).join('');
+    }
+
+    function setBet(value) {
+      bet = value;
+      updateDisplay();
+    }
+
+    function increaseBet() {
+      bet = Math.min(bet + 1, 1000);
+      updateDisplay();
+    }
+
+    function decreaseBet() {
+      bet = Math.max(1, bet - 1);
+      updateDisplay();
+    }
+
+    function startRound() {
+      running = true;
+      crashed = false;
+      cashed = false;
+      mult = 1.00;
+      document.getElementById('crashed-label').classList.add('hidden');
+      document.getElementById('action-btn').textContent = 'Cash Out';
+      document.getElementById('action-btn').onclick = cashOut;
+
+      const target = (1 + Math.random() * 14).toFixed(2);
+      let m = 1;
+
+      timer = setInterval(() => {
+        m += 0.03 + m * 0.01;
+        if (m >= target) {
+          clearInterval(timer);
+          running = false;
+          crashed = true;
+          mult = Number(target);
+          document.getElementById('multiplier').textContent = mult.toFixed(2) + 'x';
+          document.getElementById('crashed-label').classList.remove('hidden');
+          history = [Number(target), ...history].slice(0, 7);
+          updateDisplay();
+          document.getElementById('action-btn').textContent = `Bet\n${bet.toFixed(2)} USD`;
+          document.getElementById('action-btn').onclick = placeBet;
+          setTimeout(startRound, 1800);
+        } else {
+          mult = Number(m.toFixed(2));
+          updateDisplay();
+          updatePlanePosition();
+        }
+      }, 60);
+    }
+
+    function updatePlanePosition() {
+      const plane = document.getElementById('plane');
+      const x = running ? mult * 28 : mult * 20;
+      const y = running ? -mult * 14 : -mult * 10;
+      plane.style.transform = `translate(${x}px, ${y}px)`;
+    }
+
+    function placeBet() {
+      if (running || balance < bet) return;
+      balance = +(balance - bet).toFixed(2);
+      updateDisplay();
+      startRound();
+    }
+
+    function cashOut() {
+      if (!running || cashed) return;
+      cashed = true;
+      running = false;
+      clearInterval(timer);
+      const win = bet * mult;
+      balance = +(balance + win).toFixed(2);
+      history = [mult, ...history].slice(0, 7);
+      updateDisplay();
+      document.getElementById('action-btn').textContent = `Bet\n${bet.toFixed(2)} USD`;
+      document.getElementById('action-btn').onclick = placeBet;
+      setTimeout(startRound, 1800);
+    }
+
+    // Initialize
+    updateDisplay();
+    startRound();
+  </script>
+</body>
+</html>
